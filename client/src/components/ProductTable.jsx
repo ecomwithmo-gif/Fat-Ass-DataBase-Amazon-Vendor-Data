@@ -40,11 +40,37 @@ export default function ProductTable({ vendorName }) {
 
   const [selectedAsins, setSelectedAsins] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null); // Context for Amazon Match
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false); // RENAMED
   const [columnOrder, setColumnOrder] = useState([]);
   const [columnVisibility, setColumnVisibility] = useState({});
   const [activeId, setActiveId] = useState(null);
+  
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 50, // User requested 50 per page
+  });
+  const [columnFilters, setColumnFilters] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+
+  // Safe filter function that handles null/undefined/numbers
+  const safeFilter = (row, columnId, filterValue) => {
+    const value = row.getValue(columnId);
+    
+    // Multi-select filter (Array)
+    if (Array.isArray(filterValue)) {
+        if (value === null || value === undefined) {
+             return filterValue.includes("(Blanks)");
+        }
+        return filterValue.includes(String(value));
+    }
+
+    // Text search (String)
+    if (value === null || value === undefined) return false;
+    return String(value).toLowerCase().includes(String(filterValue).toLowerCase());
+  };
 
   // Search State
+  const [globalFilter, setGlobalFilter] = useState('');
   const [debouncedGlobalFilter, setDebouncedGlobalFilter] = useState("");
   
   // Debounce search
@@ -55,10 +81,7 @@ export default function ProductTable({ vendorName }) {
       return () => clearTimeout(handler);
   }, [globalFilter]);
   
-  // Reset pagination when search changes
-  useEffect(() => {
-      table.setPageIndex(0);
-  }, [debouncedGlobalFilter]);
+
 
   // Global Calculation Settings
   const [shippingCost, setShippingCost] = useState(0); // Default $0
@@ -736,33 +759,7 @@ export default function ProductTable({ vendorName }) {
      }
   }, [columns, columnOrder.length]);
 
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 50, // User requested 50 per page
-  });
-  
-  const [globalFilter, setGlobalFilter] = useState('');
-  const [columnFilters, setColumnFilters] = useState([]);
 
-  // Safe filter function that handles null/undefined/numbers
-  // Safe filter function that handles null/undefined/numbers/arrays
-  const safeFilter = (row, columnId, filterValue) => {
-    const value = row.getValue(columnId);
-    
-    // Multi-select filter (Array)
-    if (Array.isArray(filterValue)) {
-        if (value === null || value === undefined) {
-             return filterValue.includes("(Blanks)");
-        }
-        return filterValue.includes(String(value));
-    }
-
-    // Text search (String)
-    if (value === null || value === undefined) return false;
-    return String(value).toLowerCase().includes(String(filterValue).toLowerCase());
-  };
-
-  const [totalCount, setTotalCount] = useState(0);
 
   const table = useReactTable({
     data: processedData, // Use processed data with metrics
@@ -793,13 +790,16 @@ export default function ProductTable({ vendorName }) {
     }
   });
 
+  // Reset pagination when search changes
+  useEffect(() => {
+      table.setPageIndex(0);
+  }, [debouncedGlobalFilter]);
+
   // Re-fetch when pagination changes
   useEffect(() => {
      fetchProducts();
      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagination.pageIndex, pagination.pageSize, vendorName]);
-
-  const [isImportModalOpen, setIsImportModalOpen] = useState(false); // RENAMED
 
   return (
     // <DndContext
