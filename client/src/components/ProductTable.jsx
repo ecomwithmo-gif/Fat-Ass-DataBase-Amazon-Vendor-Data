@@ -39,6 +39,7 @@ export default function ProductTable({ vendorName }) {
   const [isMatchModalOpen, setIsMatchModalOpen] = useState(false);
 
   const [selectedAsins, setSelectedAsins] = useState([]);
+  const [selectedMatches, setSelectedMatches] = useState([]); // NEW: Pass full objects
   const [selectedProduct, setSelectedProduct] = useState(null); // Context for Amazon Match
   const [isImportModalOpen, setIsImportModalOpen] = useState(false); // RENAMED
   const [columnOrder, setColumnOrder] = useState([]);
@@ -143,8 +144,8 @@ export default function ProductTable({ vendorName }) {
 
     const fetchAmazonData = async () => {
         try {
-            // Fetch all Amazon Data products
-            const response = await api.get('/products?vendor=Amazon%20Data&limit=5000'); 
+            // Fetch all Amazon Data products (limit increased to cover full dataset)
+            const response = await api.get('/products?vendor=Amazon%20Data&limit=50000'); 
             const products = response.data.data || response.data || [];
             
             const map = {};
@@ -209,10 +210,23 @@ export default function ProductTable({ vendorName }) {
         
         // potentialMatches is an array of products
         let amazonMatches = [];
+        
+        // Merge matches from both UPC and SKU (ASIN)
         if (upcKey && amazonDataMap[upcKey]) {
-            amazonMatches = amazonDataMap[upcKey];
-        } else if (skuKey && amazonDataMap[skuKey]) {
-            amazonMatches = amazonDataMap[skuKey];
+             amazonMatches = [...amazonMatches, ...amazonDataMap[upcKey]];
+        }
+        if (skuKey && amazonDataMap[skuKey]) {
+             amazonMatches = [...amazonMatches, ...amazonDataMap[skuKey]];
+        }
+        
+        // Deduplicate by ID
+        if (amazonMatches.length > 1) {
+             const uniqueIds = new Set();
+             amazonMatches = amazonMatches.filter(p => {
+                 if (uniqueIds.has(p.id)) return false;
+                 uniqueIds.add(p.id);
+                 return true;
+             });
         }
 
         // --- NEW: Robust Lookup using Raw Keys if Clean Keys fail ---
@@ -540,9 +554,10 @@ export default function ProductTable({ vendorName }) {
                 onClick={() => {
                     if (hasMatch) {
                         setSelectedProduct(row.original);
-                        // Pass ALL matching SKUs to the modal
+                        // Pass ALL matching SKUs to the modal AND full objects
                         const skus = matches.map(m => m.sku);
                         setSelectedAsins(skus);
+                        setSelectedMatches(matches); // Pass full data
                         setIsMatchModalOpen(true);
                     }
                 }}
@@ -819,6 +834,7 @@ export default function ProductTable({ vendorName }) {
          isOpen={isMatchModalOpen} 
          onClose={() => setIsMatchModalOpen(false)} 
          asins={selectedAsins}
+         initialMatches={selectedMatches} // Pass full data to avoid re-fetch
          referenceProduct={selectedProduct}
          shippingCost={shippingCost} 
          miscCost={miscCost}

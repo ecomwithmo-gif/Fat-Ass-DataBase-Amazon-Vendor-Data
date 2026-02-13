@@ -12,19 +12,29 @@ import {
 } from '@tanstack/react-table';
 import ExcelColumnFilter from './ExcelColumnFilter';
 
-export default function AmazonMatchDetails({ isOpen, onClose, asins = [], referenceProduct = {}, shippingCost = 0, miscCost = 0 }) {
+export default function AmazonMatchDetails({ isOpen, onClose, asins = [], initialMatches = [], referenceProduct = {}, shippingCost = 0, miscCost = 0 }) {
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState([]);
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
 
   useEffect(() => {
-    if (isOpen && asins.length > 0) {
-      fetchAmazonProducts();
-    } else {
-        setProducts([]);
+    if (isOpen) {
+        if (initialMatches && initialMatches.length > 0) {
+            // Use provided data directly
+            const productsWithMetrics = initialMatches.map(p => {
+                const metrics = calculateFeesAndProfit(referenceProduct || {}, p, shippingCost, miscCost);
+                return { ...p, metrics };
+            });
+            setProducts(productsWithMetrics);
+        } else if (asins.length > 0) {
+            // Fallback to fetch if only ASINs provided
+            fetchAmazonProducts();
+        } else {
+            setProducts([]);
+        }
     }
-  }, [isOpen, asins]);
+  }, [isOpen, asins, initialMatches, referenceProduct, shippingCost, miscCost]);
 
   const fetchAmazonProducts = async () => {
     setLoading(true);
