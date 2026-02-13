@@ -795,10 +795,10 @@ export default function ProductTable({ vendorName }) {
       table.setPageIndex(0);
   }, [debouncedGlobalFilter]);
 
-  // Re-fetch when pagination changes
+  // Fetch when pagination, vendor, or SEARCH changes
   useEffect(() => {
-     fetchProducts();
-     // eslint-disable-next-line react-hooks/exhaustive-deps
+      console.log("Fetching products with:", { pageIndex: pagination.pageIndex, pageSize: pagination.pageSize, vendorName, debouncedGlobalFilter }); // DEBUG
+      fetchProducts();
   }, [pagination.pageIndex, pagination.pageSize, vendorName, debouncedGlobalFilter]);
 
   return (

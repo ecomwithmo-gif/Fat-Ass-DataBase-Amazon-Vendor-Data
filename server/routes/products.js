@@ -44,6 +44,7 @@ router.post('/by-skus', async (req, res) => {
   // GET products (filter by vendor, with pagination, and SEARCH)
 router.get('/', async (req, res) => {
   const { vendor, page = 1, limit = 50, search } = req.query;
+  console.log(`[GET /products] Vendor: ${vendor}, Page: ${page}, Search: "${search}"`); // DEBUG LOG
   
   const from = (page - 1) * limit;
   const to = from + limit - 1;
