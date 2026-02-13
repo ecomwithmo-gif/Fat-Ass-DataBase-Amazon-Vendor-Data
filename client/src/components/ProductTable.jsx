@@ -799,7 +799,7 @@ export default function ProductTable({ vendorName }) {
   useEffect(() => {
      fetchProducts();
      // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagination.pageIndex, pagination.pageSize, vendorName]);
+  }, [pagination.pageIndex, pagination.pageSize, vendorName, debouncedGlobalFilter]);
 
   return (
     // <DndContext
